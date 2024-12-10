@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userId                 Int               @id @default(autoincrement())
+  userName               String?           @unique
+  fullName               String?
+  gender                 String?
+  profile_picture        String?
+  email                  String
+  phoneNumber            Int?
+  address                String?
+  Occupation             String?
+  Ratings                Float             @default(3.00)
+  reviews                Review[]
+  joinedOn               DateTime          @default(now())
+  accountStatus          String            @default("banned")
+  drivingLiscenceNumber  Int?
+  drivingLiscencePicture String?
+  vehicles               Vehicle[]
+  offeredRides           Ride[]            @relation("asDriver")
+  joinedRides            Ride[]            @relation("asPassenger")
+  bookings               Booking[]
+  requests               Booking[]  @relation("asDriver")
+}
+
+model Review {
+  reviewId   Int      @id @default(autoincrement())
+  reviewText String
+  rating     Float
+  createdAt  DateTime @default(now())
+  ReviewFor  User     @relation(fields: [userId], references: [userId])
+  userId     Int
+}
+
+model Vehicle {
+  vehicleId          Int    @id @default(autoincrement())
+  vehicleOwnerUserId Int    
+  vehicleOwner       User   @relation(fields: [vehicleOwnerUserId], references: [userId])
+  Company            String
+  model              String
+  purchaseYear       Int?
+  vehicleType        String
+  capacity           Int
+  trips              Ride[]
+}
+
+model Ride {
+  rideId               Int               @id @default(autoincrement())
+  driver               User              @relation("asDriver", fields: [driverId], references: [userId])
+  driverId             Int
+  vehicle              Vehicle           @relation(fields: [vehicleId], references: [vehicleId])
+  vehicleId            Int
+  origin               String
+  price                Float
+  // wayPoints            wayPoint[]
+  destination          String
+  departureTime        DateTime
+  EstimatedArrivalTime DateTime
+  seatsRemaining       Int 
+  Passengers           User[]            @relation("asPassenger")
+  tripBookings         Booking[]
+  completed            Boolean           @default(false)
+}
+
+// model wayPoint {
+//   wayPointId              Int       @id @default(autoincrement())
+//   Ride                    Ride      @relation(fields: [rideId], references: [rideId])
+//   rideId                  Int
+//   wayPointLocation        String
+//   wayPointTime            DateTime
+//   numberOfSeatsAtWayPoint Int
+//   bookingStarts           Booking[] @relation("PickUpWayPoint")
+//   bookingEnds             Booking[] @relation("DropOffWayPoint")
+// }
+
+// model PassengerStatus {
+//   passenger           Ride      @relation(fields: [passengerStatusId], references: [rideId])
+//   passengerStatusId   Int       @id @default(autoincrement())
+//   user                User      @relation(fields: [requestedUserId], references: [userId])
+//   requestedUserId     Int
+//   status              String    @default("pending")
+//   bookingconfirmation Booking[]
+// }
+
+model Booking {
+  bookingId         Int              @id @default(autoincrement())
+  rider             User?             @relation(fields: [riderId], references: [userId]) // Rider who made the booking
+  riderId           Int
+  ride              Ride?            @relation(fields: [rideId], references: [rideId]) // Ride being booked
+  rideId            Int
+  driver            User?            @relation("asDriver", fields: [driverId], references: [userId])
+  driverId           Int             @default(1)
+  bookingStatus     String // Booking status: confirmed, pending, rejected, cancelled
+  paymentStatus     String // Payment status: confirmed, rejected
+  seatsRequired     Int             @default(1)
+  stripe_ref_id     String?
+}
